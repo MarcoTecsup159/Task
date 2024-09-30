@@ -40,11 +40,22 @@ fun TaskScreen(taskViewModel: TaskViewModel = viewModel()) {
     val taskList by taskViewModel.tasks.collectAsState()  // Observar el estado de las tareas
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    var showAddTaskDialog by remember { mutableStateOf(false) }
+
+    if (showAddTaskDialog) {
+        AddTaskDialog(
+            onDismiss = { showAddTaskDialog = false },
+            onTaskAdded = { title, description, dueDate, priority ->
+                taskViewModel.addTask(title, description, dueDate, priority)
+                showAddTaskDialog = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Tasks") },
+                title = { Text("Mis Tareas") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -52,12 +63,7 @@ fun TaskScreen(taskViewModel: TaskViewModel = viewModel()) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                // Acción para agregar una nueva tarea
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Add New Task Clicked")
-                }
-            }) {
+            FloatingActionButton(onClick = { showAddTaskDialog = true }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Task")
             }
         },
@@ -97,6 +103,59 @@ fun TaskListView(taskList: List<Task>, taskViewModel: TaskViewModel) {
 }
 
 @Composable
+fun AddTaskDialog(
+    onDismiss: () -> Unit,
+    onTaskAdded: (String, String?, Date?, Int) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var priority by remember { mutableStateOf(1) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Agregar Nueva Tarea") },
+        text = {
+            Column {
+                TextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Titulo") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Prioridad:")
+                Slider(
+                    value = priority.toFloat(),
+                    onValueChange = { priority = it.toInt() },
+                    valueRange = 1f..5f,
+                    steps = 3
+                )
+                Text("Prioridad: $priority")
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                if (title.isNotBlank()) {
+                    onTaskAdded(title, description.ifBlank { null }, null, priority)
+                }
+            }) {
+                Text("Agregar")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        })
+}
+
+
+        @Composable
 fun TaskItem(
     task: Task,
     onTaskCheckedChange: (Boolean) -> Unit,
