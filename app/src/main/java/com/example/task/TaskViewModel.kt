@@ -1,7 +1,11 @@
 package com.example.task
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +40,7 @@ class TaskViewModel(private val taskDao: TaskDao) : ViewModel() {
                 completed = false
             )
             taskDao.insertTask(newTask)
-            loadTasks() 
+            loadTasks()
         }
     }
 
@@ -72,6 +76,15 @@ class TaskViewModel(private val taskDao: TaskDao) : ViewModel() {
             val updatedTask = task.copy(completed = !task.completed)
             taskDao.updateTask(updatedTask)
             loadTasks()
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[APPLICATION_KEY] as TaskApplication)
+                TaskViewModel(application.database.taskDao())
+            }
         }
     }
 }
